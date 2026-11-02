@@ -1,0 +1,10 @@
+# Built data (rebuild with python -m lawrag.corpus); the question set is tracked
+data/raw/
+data/corpus.jsonl
+results/
+
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.ipynb_checkpoints/
