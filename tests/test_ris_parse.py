@@ -111,3 +111,11 @@ def test_build_law_skips_the_norm_record():
     records = build_law(client, "MRG", "2026-11-02")
     assert [r["section"] for r in records] == ["§ 1", "§ 2"]  # § 0 ("Norm") dropped
     assert records[0]["path"] == ["I. Hauptstück", "Miete"]
+
+
+def test_build_record_uses_our_abbreviation_when_ris_has_none():
+    _, refs = parse_search(json.loads((FIX / "search_mrg.json").read_text(encoding="utf-8")))
+    ref = refs[1]
+    ref.law = "Urlaubsgesetz"  # what RIS returns for a law without Abkuerzung
+    record, _ = build_record(ref, (FIX / "NOR40105099.xml").read_bytes(), {}, law="UrlG")
+    assert record["law"] == "UrlG" and record["id"].startswith("UrlG § ")

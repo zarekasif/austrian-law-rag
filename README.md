@@ -23,7 +23,8 @@ set of German questions with gold § labels, so each design choice is backed by 
 | Ausländerbeschäftigungsgesetz | AuslBG | work permits | 67 |
 | Urlaubsgesetz | UrlG | paid leave | 24 |
 
-Counts are API documents and include repealed placeholders; the built corpus keeps §§ with text.
+Counts are API documents. The built corpus has **545 §§ in 1,435 chunks** (the law's title record
+is dropped); the longest § is UG § 143 (transitional provisions, ~40k characters, split into many chunks).
 
 ## How it works
 

@@ -21,12 +21,16 @@ def section_key(law: str, section: str) -> str:
     return f"{law} {' '.join(section.split())}"
 
 
-def build_record(ref: DocRef, xml: bytes, path: dict[int, str], topic: str = "") -> tuple[dict, dict[int, str]]:
+def build_record(
+    ref: DocRef, xml: bytes, path: dict[int, str], topic: str = "", law: str | None = None
+) -> tuple[dict, dict[int, str]]:
+    """``law`` overrides the abbreviation from RIS, which some laws (e.g. the Urlaubsgesetz) lack."""
     parsed = parse_paragraph_xml(xml)
     path = carry_headings(path, parsed.headings)
+    law = law or ref.law
     record = {
-        "id": section_key(ref.law, ref.section),
-        "law": ref.law,
+        "id": section_key(law, ref.section),
+        "law": law,
         "law_title": ref.law_title,
         "topic": topic,
         "section": ref.section,
@@ -48,7 +52,7 @@ def build_law(client: RisClient, law: str, date: str) -> list[dict]:
     for ref in client.law_documents(gesnr, date):
         if ref.doc_type != "Paragraph" or not ref.xml_url:
             continue  # skip the law's title record ("Norm") and anything without text
-        record, path = build_record(ref, client.get(ref.xml_url), path, topic)
+        record, path = build_record(ref, client.get(ref.xml_url), path, topic, law=law)
         if record["text"]:
             records.append(record)
     return records
