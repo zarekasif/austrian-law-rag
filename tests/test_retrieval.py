@@ -118,7 +118,7 @@ def test_hybrid_retriever_combines_names_and_rankings():
             return self.ranking
 
     hybrid = HybridRetriever(Fixed("a", ["X", "Y"]), Fixed("b", ["Y", "Z"]))
-    assert hybrid.name == "a+b" and hybrid("q")[0] == "Y"
+    assert hybrid.name == "a + b" and hybrid("q")[0] == "Y"
 
 
 def test_check_gold_reports_unknown_sections():

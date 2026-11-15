@@ -37,23 +37,29 @@ is dropped); the longest § is UG § 143 (transitional provisions, ~40k characte
 3. **Chunk** (`lawrag.chunk`): one chunk per § where possible; long §§ split at paragraph
    boundaries. Every chunk starts with a header such as
    `MRG § 1 – Geltungsbereich (Mietrechtsgesetz: I. Hauptstück › Miete)` so it can be cited.
-4. **Retrieve** (`lawrag.retrieve`): BM25 (own implementation), a dense bi-encoder (multilingual
-   E5) and a hybrid using reciprocal rank fusion.
-5. **Evaluate** (`lawrag.metrics`, `lawrag.evaluate`): Recall@k, MRR@10 and nDCG@10 at § level.
+4. **Retrieve** (`lawrag.retrieve`, `lawrag.text`): BM25 (own implementation) on words, on German
+   stems (Snowball algorithm, own implementation) or on character 4-grams of stems for compounds;
+   dense bi-encoders (multilingual E5, BGE-M3) with cached embeddings; weighted reciprocal rank
+   fusion; cross-encoder reranking (BGE reranker v2 m3).
+5. **Evaluate** (`lawrag.metrics`, `lawrag.evaluate`, `lawrag.experiments`): Recall@k, MRR@10 and
+   nDCG@10 at § level, plus the rank of the correct § per question for error analysis.
 
 ## Quick start
 
 ```bash
 pip install -e ".[dev]"
-pytest                                    # 25 tests, offline, using real RIS fixtures
+pytest                                    # 56 tests, offline (real RIS fixtures, fake models)
 
 python -m lawrag.corpus --out data/corpus.jsonl            # needs internet; ~10 min first time
 python -m lawrag.evaluate --search "Wie viel Urlaub steht mir zu?"
 python -m lawrag.evaluate --retrievers bm25                # scores data/questions.jsonl
 ```
 
-Or run everything in Colab: [`notebooks/01_corpus_and_bm25.ipynb`](notebooks/01_corpus_and_bm25.ipynb)
-([open in Colab](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/01_corpus_and_bm25.ipynb)).
+Full comparison of all retrievers: `python -m lawrag.experiments --cache data/embeddings` (GPU recommended).
+
+Colab notebooks:
+[01: corpus, questions, BM25](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/01_corpus_and_bm25.ipynb) ·
+[02: compare all retrievers](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/02_compare_retrievers.ipynb).
 
 ## First results
 
@@ -88,8 +94,8 @@ avoided, is described in [`docs/writing-questions.md`](docs/writing-questions.md
 ## Roadmap
 
 1. ~~Corpus, BM25 baseline, evaluation harness~~ (done)
-2. Extend to ~60 questions; BM25 with German stemming and compound splitting; weighted hybrid;
-   BGE-M3; cross-encoder reranking. First results above confirm the vocabulary-mismatch hypothesis.
+2. Stronger baselines and reranking (code done: stemmed and 4-gram BM25, BGE-M3, weighted hybrid,
+   cross-encoder reranking); results pending. Extend the question set to ~60 with a held-out part.
 3. Answer generation with an LLM that must cite §§; check that every citation supports the answer.
 4. FastAPI service, Docker image and a public demo.
 

@@ -56,3 +56,11 @@ def evaluate(
     summary = {name: 100 * mean(r[name] for r in per_q) for name in per_q[0]} if per_q else {}
     summary["questions"] = len(per_q)
     return summary
+
+
+def first_gold_rank(ranked: list[str], gold: set[str]) -> int | None:
+    """1-based rank of the first relevant §, or None if it is not retrieved at all."""
+    for i, sid in enumerate(ranked, start=1):
+        if sid in gold:
+            return i
+    return None

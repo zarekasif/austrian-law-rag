@@ -2,10 +2,13 @@
 
 Usage:
     python -m lawrag.evaluate --corpus data/corpus.jsonl --questions data/questions.jsonl
-    python -m lawrag.evaluate ... --retrievers bm25 e5 hybrid   # dense needs the [dense] extra
+    python -m lawrag.evaluate ... --retrievers bm25 bm25-stem bm25-ngram e5 hybrid
 
 Search interactively (useful while writing questions):
     python -m lawrag.evaluate --corpus data/corpus.jsonl --search "Wie lange darf ich arbeiten?"
+
+For the full comparison (all retrievers, weight sweep, reranking, per-question ranks) use
+``python -m lawrag.experiments``.
 """
 
 from __future__ import annotations
@@ -16,13 +19,15 @@ from pathlib import Path
 
 from .chunk import chunk_corpus
 from .metrics import evaluate
-from .retrieve import BM25Retriever, DenseRetriever, HybridRetriever, load_corpus
+from .retrieve import DENSE_MODELS, BM25Retriever, DenseRetriever, HybridRetriever, load_corpus
 
-DENSE_MODELS = {"e5": "intfloat/multilingual-e5-base"}
+LEXICAL = {"bm25": "word", "bm25-stem": "stem", "bm25-ngram": "ngram"}
+CHOICES = [*LEXICAL, *DENSE_MODELS, "hybrid"]
+COLUMNS = ["recall@1", "recall@3", "recall@5", "recall@10", "mrr@10", "ndcg@10"]
 
 
 def load_questions(path: Path) -> list[dict]:
-    with path.open(encoding="utf-8") as f:
+    with Path(path).open(encoding="utf-8") as f:
         qs = [json.loads(line) for line in f if line.strip() and not line.lstrip().startswith("//")]
     for q in qs:
         if not q.get("question") or not q.get("gold"):
@@ -37,10 +42,9 @@ def check_gold(questions: list[dict], records: list[dict]) -> list[str]:
 
 
 def format_table(rows: dict[str, dict]) -> str:
-    cols = ["recall@1", "recall@3", "recall@5", "recall@10", "mrr@10", "ndcg@10"]
-    lines = ["| retriever | " + " | ".join(cols) + " |", "|---" * (len(cols) + 1) + "|"]
+    lines = ["| retriever | " + " | ".join(COLUMNS) + " |", "|---" * (len(COLUMNS) + 1) + "|"]
     for name, m in rows.items():
-        lines.append(f"| {name} | " + " | ".join(f"{m[c]:.1f}" for c in cols) + " |")
+        lines.append(f"| {name} | " + " | ".join(f"{m[c]:.1f}" for c in COLUMNS) + " |")
     return "\n".join(lines)
 
 
@@ -48,8 +52,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--corpus", type=Path, default=Path("data/corpus.jsonl"))
     ap.add_argument("--questions", type=Path, default=Path("data/questions.jsonl"))
-    ap.add_argument("--retrievers", nargs="+", default=["bm25"], choices=["bm25", "e5", "hybrid"])
+    ap.add_argument("--retrievers", nargs="+", default=["bm25"], choices=CHOICES)
     ap.add_argument("--max-chars", type=int, default=1200)
+    ap.add_argument("--cache", type=Path, help="directory for cached chunk embeddings")
     ap.add_argument("--search", help="print the top 10 § for one query and exit")
     ap.add_argument("--out", type=Path, help="write the results as JSON")
     args = ap.parse_args()
@@ -57,10 +62,9 @@ def main() -> None:
     records = load_corpus(args.corpus)
     by_id = {r["id"]: r for r in records}
     chunks = chunk_corpus(records, args.max_chars)
-    bm25 = BM25Retriever(chunks)
 
     if args.search:
-        for rank, sid in enumerate(bm25(args.search)[:10], start=1):
+        for rank, sid in enumerate(BM25Retriever(chunks)(args.search)[:10], start=1):
             print(f"{rank:2d}. {sid:14s} {by_id[sid]['title']}")
         return
 
@@ -69,16 +73,19 @@ def main() -> None:
     if missing:
         raise SystemExit(f"gold labels not in corpus: {missing}")
 
-    retrievers = {}
-    dense = None
-    for name in args.retrievers:
-        if name == "bm25":
-            retrievers[name] = bm25
-        else:
-            dense = dense or DenseRetriever(chunks, DENSE_MODELS["e5"])
-            retrievers[name] = dense if name == "e5" else HybridRetriever(bm25, dense)
+    built: dict[str, object] = {}
 
-    results = {name: evaluate(questions, r) for name, r in retrievers.items()}
+    def get(name: str):
+        if name not in built:
+            if name in LEXICAL:
+                built[name] = BM25Retriever(chunks, analyzer=LEXICAL[name])
+            elif name in DENSE_MODELS:
+                built[name] = DenseRetriever(chunks, name, cache_dir=args.cache)
+            else:  # "hybrid": the first-run setting, BM25 (words) + E5 with equal weights
+                built[name] = HybridRetriever(get("bm25"), get("e5"))
+        return built[name]
+
+    results = {name: evaluate(questions, get(name)) for name in args.retrievers}
     print(f"{len(questions)} questions, {len(records)} §, {len(chunks)} chunks\n")
     print(format_table(results))
     if args.out:
