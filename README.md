@@ -10,7 +10,7 @@ from the official legal information system (RIS) in their current version.
 The point of the project is the measurement: every retrieval method is scored on a hand-written
 set of German questions with gold § labels, so each design choice is backed by numbers.
 
-**Status:** milestone 1 of 4: corpus pipeline, BM25 baseline and evaluation harness, all tested.
+**Status:** milestone 1 done; first retrieval results below. Milestone 2 (stronger baselines, reranking, larger question set) in progress.
 
 ## Corpus
 
@@ -55,6 +55,30 @@ python -m lawrag.evaluate --retrievers bm25                # scores data/questio
 Or run everything in Colab: [`notebooks/01_corpus_and_bm25.ipynb`](notebooks/01_corpus_and_bm25.ipynb)
 ([open in Colab](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/01_corpus_and_bm25.ipynb)).
 
+## First results
+
+22 questions (21 phrased the way a non-lawyer asks), 545 §§, 1,435 chunks. Retrieval at § level.
+
+| Retriever | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
+| --- | --- | --- | --- | --- | --- | --- |
+| BM25 (own implementation, no stemming) | 22.7 | 27.3 | 27.3 | 27.3 | 25.0 | 25.6 |
+| Dense: multilingual-e5-base | **50.0** | **72.7** | **81.8** | **90.9** | **62.7** | **69.5** |
+| Hybrid: BM25 + E5, reciprocal rank fusion | 31.8 | 31.8 | 45.5 | 68.2 | 38.2 | 44.9 |
+
+What this shows so far:
+
+- **Lexical search fails on everyday wording.** BM25 finds only 6 of 22 §§ in its top 10. People ask
+  "Muss mein Chef mir eine Pause geben?"; the law says *Ruhepause*. Without stemming or compound
+  splitting, *Pause* never matches *Ruhepause*.
+- **The dense model closes most of that gap**: the right § is in the top 10 for 20 of 22 questions.
+- **Naive fusion hurts.** Equal-weight reciprocal rank fusion lets BM25's confident wrong hits push
+  correct E5 results down. A hybrid only helps if the weak retriever is weighted down or improved.
+
+Caveat: with 22 questions, one question is 4.5 points. The set is being extended to ~60 before
+drawing firm conclusions. The questions were drafted with AI assistance and each gold § was checked
+against the RIS text; layperson phrasing deliberately tests vocabulary mismatch, which favours dense
+retrieval.
+
 ## Evaluation set
 
 Hand-written German questions in [`data/questions.jsonl`](data/questions.jsonl), mostly phrased
@@ -64,8 +88,8 @@ avoided, is described in [`docs/writing-questions.md`](docs/writing-questions.md
 ## Roadmap
 
 1. ~~Corpus, BM25 baseline, evaluation harness~~ (done)
-2. Evaluation set of 60 questions; BM25 vs. dense (E5, BGE-M3) vs. hybrid vs. cross-encoder reranking.
-   Hypothesis: lexical search misses everyday wording and German compounds (*Pause* vs. *Ruhepause*).
+2. Extend to ~60 questions; BM25 with German stemming and compound splitting; weighted hybrid;
+   BGE-M3; cross-encoder reranking. First results above confirm the vocabulary-mismatch hypothesis.
 3. Answer generation with an LLM that must cite §§; check that every citation supports the answer.
 4. FastAPI service, Docker image and a public demo.
 

@@ -1,1 +1,22 @@
-{"id": "q001", "question": "Gilt das Mietrechtsgesetz auch für ein Zimmer im Studentenheim?", "gold": ["MRG § 1"], "law": "MRG", "type": "layperson"}
+{"id": "q001", "question": "Wie viele Urlaubstage habe ich pro Jahr?", "gold": ["UrlG § 2"], "law": "UrlG", "type": "layperson"}
+{"id": "q002", "question": "Darf mein Chef einfach bestimmen, wann ich Urlaub nehme?", "gold": ["UrlG § 4"], "law": "UrlG", "type": "layperson"}
+{"id": "q003", "question": "Ich war im Urlaub vier Tage krank. Verliere ich diese Urlaubstage?", "gold": ["UrlG § 5"], "law": "UrlG", "type": "layperson"}
+{"id": "q004", "question": "Ich kündige meinen Job. Bekomme ich Geld für Urlaubstage, die ich nicht genommen habe?", "gold": ["UrlG § 10"], "law": "UrlG", "type": "layperson"}
+{"id": "q005", "question": "Wie viele Stunden darf ich normalerweise pro Tag arbeiten?", "gold": ["AZG § 3"], "law": "AZG", "type": "layperson"}
+{"id": "q006", "question": "Wie lange darf ein Arbeitstag mit Überstunden maximal dauern?", "gold": ["AZG § 9"], "law": "AZG", "type": "layperson"}
+{"id": "q007", "question": "Bekomme ich mehr Geld, wenn ich länger arbeite als normal?", "gold": ["AZG § 10"], "law": "AZG", "type": "layperson"}
+{"id": "q008", "question": "Muss mein Chef mir eine Pause geben, wenn ich 7 Stunden arbeite?", "gold": ["AZG § 11"], "law": "AZG", "type": "layperson"}
+{"id": "q009", "question": "Ich habe bis 23 Uhr gearbeitet. Darf ich am nächsten Tag schon um 7 Uhr wieder anfangen?", "gold": ["AZG § 12"], "law": "AZG", "type": "layperson"}
+{"id": "q010", "question": "Gilt das Mietrecht auch für mein Zimmer im Studentenheim?", "gold": ["MRG § 1"], "law": "MRG", "type": "layperson"}
+{"id": "q011", "question": "Was ist der Unterschied zwischen Hauptmiete und Untermiete?", "gold": ["MRG § 2"], "law": "MRG", "type": "legal"}
+{"id": "q012", "question": "Das Dach ist undicht und es regnet in die Wohnung. Wer muss das reparieren?", "gold": ["MRG § 3"], "law": "MRG", "type": "layperson"}
+{"id": "q013", "question": "Bekomme ich meine Kaution zurück, wenn ich ausziehe?", "gold": ["MRG § 16b"], "law": "MRG", "type": "layperson"}
+{"id": "q014", "question": "Wie kurz darf ein befristeter Mietvertrag mindestens sein?", "gold": ["MRG § 29"], "law": "MRG", "type": "layperson"}
+{"id": "q015", "question": "Wie kann ich als Mieter meine Wohnung kündigen?", "gold": ["MRG § 33"], "law": "MRG", "type": "layperson"}
+{"id": "q016", "question": "Wie oft darf ich eine Prüfung wiederholen, wenn ich durchgefallen bin?", "gold": ["UG § 77"], "law": "UG", "type": "layperson"}
+{"id": "q017", "question": "Kann ich mir Kurse von meiner alten Uni anrechnen lassen?", "gold": ["UG § 78"], "law": "UG", "type": "layperson"}
+{"id": "q018", "question": "Kann ich ein Semester Pause vom Studium machen, weil ich krank bin?", "gold": ["UG § 67"], "law": "UG", "type": "layperson"}
+{"id": "q019", "question": "Wann muss ich Studiengebühren zahlen?", "gold": ["UG § 91"], "law": "UG", "type": "layperson"}
+{"id": "q020", "question": "Was brauche ich, um mein Studentenvisum zu verlängern?", "gold": ["NAG § 64"], "law": "NAG", "type": "layperson"}
+{"id": "q021", "question": "Wie viele Stunden pro Woche darf ich als ausländischer Student arbeiten?", "gold": ["AuslBG § 4"], "law": "AuslBG", "type": "layperson"}
+{"id": "q022", "question": "Wer muss die Arbeitsbewilligung beantragen, ich oder mein Arbeitgeber?", "gold": ["AuslBG § 19"], "law": "AuslBG", "type": "layperson"}
