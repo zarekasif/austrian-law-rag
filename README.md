@@ -10,7 +10,7 @@ from the official legal information system (RIS) in their current version.
 The point of the project is the measurement: every retrieval method is scored on a hand-written
 set of German questions with gold § labels, so each design choice is backed by numbers.
 
-**Status:** retrieval comparison done (milestone 2, results below): E5 + cross-encoder reranking finds the right § in the top 10 for all 22 questions. Next: answer generation with citations.
+**Status:** milestones 1–3 done. Retrieval: E5 + cross-encoder reranking finds the right § in the top 10 for all 22 questions. Answers: an open 7B model cites the right § for 77 %, but only 59 % of answers are fully correct on manual review, with errors concentrated in exception clauses. Next: service and demo.
 
 ## Corpus
 
@@ -107,6 +107,36 @@ The hybrid weights come from a three-value grid evaluated on the same questions;
 was checked against the RIS text. The set will grow to ~60, with a held-out part, before the
 choice of pipeline is final. The first run (BM25, E5, equal hybrid) reproduced exactly.
 
+## Answers with citations
+
+E5 → rerank → top 6 chunks → Qwen2.5-7B-Instruct (4-bit, Colab T4), German answers citing §§.
+Every answer was also graded by hand against the law text
+([run 1](results/m3/run1_review.md), [run 2](results/m3/run2_review.md)).
+
+| | Run 1 | Run 2 |
+| --- | --- | --- |
+| Cites a correct § (automatic) | 54.5 % | 77.3 % |
+| Contains the key fact (automatic, 18 questions) | 66.7 % | 83.3 % |
+| **Fully correct (manual)** | **14 / 22** | **13 / 22** |
+| Partly wrong / wrong (manual) | 2 / 4 | 4 / 2 |
+| "No answer" | 2 | 3 |
+
+Run 2 changed how `[1]`-style references are scored, the citation instruction and the context
+budget, after reading run 1 on the same questions; most of its citation gain is a scoring fix.
+
+Findings:
+
+1. **Automatic citation checks overstate quality.** 17 of 22 run-2 answers cite the right §, but
+   only 13 are fully correct. Two answers cite the right § and are still wrong.
+2. **The model misreads exceptions.** Asked whether tenancy law covers a student dorm, it cites
+   MRG § 1 and turns the list of *excluded* cases into a reason the law *applies*. Similar inversions
+   occur for sick days during leave (UrlG § 5) and leave payout (UrlG § 10).
+3. **Saying "no answer" works.** When the right passage was not in the context, the model mostly
+   declined instead of guessing.
+
+Next steps for answer quality: a stronger generator, quoting the exact sentence before answering,
+and retrieving the specific Absatz of long §§.
+
 ## Evaluation set
 
 German questions in [`data/questions.jsonl`](data/questions.jsonl), mostly phrased
@@ -119,8 +149,8 @@ also carry a key fact taken from the § (e.g. *11 Stunden* for the rest period) 
 1. ~~Corpus, BM25 baseline, evaluation harness~~ (done)
 2. ~~Stronger baselines and reranking~~ (done, results above). Still to do: extend the question
    set to ~60 with a held-out part.
-3. Answer generation with an LLM that must cite §§; automatic citation and key-fact checks
-   (code done, results pending).
+3. ~~Answer generation with citations; automatic and manual evaluation~~ (done, results above).
+   Open: a stronger generator, quote-then-answer prompting, Absatz-level retrieval.
 4. FastAPI service, Docker image and a public demo.
 
 ## Data and disclaimer
