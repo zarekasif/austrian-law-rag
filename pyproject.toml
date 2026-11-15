@@ -13,6 +13,8 @@ dependencies = []
 [project.optional-dependencies]
 dev = ["pytest>=8"]
 dense = ["sentence-transformers>=3.0", "numpy>=1.26"]
+generate = ["transformers>=4.44", "accelerate>=0.33", "bitsandbytes>=0.43"]
+api = ["anthropic>=0.40"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

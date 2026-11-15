@@ -41,14 +41,20 @@ is dropped); the longest § is UG § 143 (transitional provisions, ~40k characte
    stems (Snowball algorithm, own implementation) or on character 4-grams of stems for compounds;
    dense bi-encoders (multilingual E5, BGE-M3) with cached embeddings; weighted reciprocal rank
    fusion; cross-encoder reranking (BGE reranker v2 m3).
-5. **Evaluate** (`lawrag.metrics`, `lawrag.evaluate`, `lawrag.experiments`): Recall@k, MRR@10 and
-   nDCG@10 at § level, plus the rank of the correct § per question for error analysis.
+5. **Evaluate retrieval** (`lawrag.metrics`, `lawrag.evaluate`, `lawrag.experiments`): Recall@k,
+   MRR@10 and nDCG@10 at § level, plus the rank of the correct § per question for error analysis.
+6. **Answer** (`lawrag.answer`): the top chunks go into a numbered context; an LLM (open
+   Qwen2.5-7B-Instruct in 4-bit, or Claude via the API) answers in German, citing §§ as `[AZG § 11]`,
+   or says the context does not answer the question.
+7. **Evaluate answers** (`lawrag.eval_answers`): is the correct § cited, are all citations really in
+   the context, does the answer contain the key fact checked against the law text; plus a sheet
+   for grading answers by hand.
 
 ## Quick start
 
 ```bash
 pip install -e ".[dev]"
-pytest                                    # 56 tests, offline (real RIS fixtures, fake models)
+pytest                                    # 68 tests, offline (real RIS fixtures, fake models)
 
 python -m lawrag.corpus --out data/corpus.jsonl            # needs internet; ~10 min first time
 python -m lawrag.evaluate --search "Wie viel Urlaub steht mir zu?"
@@ -59,7 +65,8 @@ Full comparison of all retrievers: `python -m lawrag.experiments --cache data/em
 
 Colab notebooks:
 [01: corpus, questions, BM25](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/01_corpus_and_bm25.ipynb) ·
-[02: compare all retrievers](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/02_compare_retrievers.ipynb).
+[02: compare all retrievers](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/02_compare_retrievers.ipynb) ·
+[03: answers with citations](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/03_answers_with_citations.ipynb).
 
 ## Results
 
@@ -102,16 +109,18 @@ choice of pipeline is final. The first run (BM25, E5, equal hybrid) reproduced e
 
 ## Evaluation set
 
-Hand-written German questions in [`data/questions.jsonl`](data/questions.jsonl), mostly phrased
+German questions in [`data/questions.jsonl`](data/questions.jsonl), mostly phrased
 the way a non-lawyer would ask. How they are written, and how pooling bias towards BM25 is
-avoided, is described in [`docs/writing-questions.md`](docs/writing-questions.md).
+avoided, is described in [`docs/writing-questions.md`](docs/writing-questions.md). 18 of 22 questions
+also carry a key fact taken from the § (e.g. *11 Stunden* for the rest period) to check answers.
 
 ## Roadmap
 
 1. ~~Corpus, BM25 baseline, evaluation harness~~ (done)
 2. ~~Stronger baselines and reranking~~ (done, results above). Still to do: extend the question
    set to ~60 with a held-out part.
-3. Answer generation with an LLM that must cite §§; check that every citation supports the answer.
+3. Answer generation with an LLM that must cite §§; automatic citation and key-fact checks
+   (code done, results pending).
 4. FastAPI service, Docker image and a public demo.
 
 ## Data and disclaimer
