@@ -101,6 +101,12 @@ class AnswerPipeline:
         return Answer(question, text, parse_citations(text), sections, is_abstention(text))
 
 
+def chat_prompt(tokenizer, system: str, user: str) -> str:
+    """The model's chat template applied to a system and a user message, as text."""
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
+    return tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+
+
 class HFGenerator:
     """Local open model through transformers; 4-bit quantisation so a 7B model fits a T4."""
 
@@ -122,13 +128,17 @@ class HFGenerator:
         self.max_new_tokens = max_new_tokens
 
     def __call__(self, system: str, user: str) -> str:
-        messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
-        inputs = self.tokenizer.apply_chat_template(
-            messages, add_generation_prompt=True, return_tensors="pt"
-        ).to(self.model.device)
+        prompt = chat_prompt(self.tokenizer, system, user)
+        # Tokenise the formatted text ourselves: what apply_chat_template returns with
+        # return_tensors differs between transformers versions (tensor vs. BatchEncoding).
+        inputs = self.tokenizer(prompt, return_tensors="pt", add_special_tokens=False).to(self.model.device)
         with self.torch.no_grad():
-            out = self.model.generate(inputs, max_new_tokens=self.max_new_tokens, do_sample=False)
-        return self.tokenizer.decode(out[0, inputs.shape[1]:], skip_special_tokens=True)
+            out = self.model.generate(
+                **inputs, max_new_tokens=self.max_new_tokens, do_sample=False,
+                pad_token_id=self.tokenizer.pad_token_id or self.tokenizer.eos_token_id,
+            )
+        prompt_len = inputs["input_ids"].shape[1]
+        return self.tokenizer.decode(out[0, prompt_len:], skip_special_tokens=True)
 
 
 class AnthropicGenerator:

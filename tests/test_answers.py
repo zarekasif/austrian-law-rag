@@ -137,3 +137,14 @@ def test_summarize_handles_all_abstentions():
              "citation_precision": None, "fact_hit": None}]
     s = summarize(rows)
     assert s["cites_any_when_answering"] is None and s["citation_precision"] is None
+
+
+def test_chat_prompt_asks_the_template_for_text():
+    from lawrag.answer import chat_prompt
+
+    class Tok:
+        def apply_chat_template(self, messages, tokenize=True, add_generation_prompt=False, **kw):
+            assert tokenize is False and add_generation_prompt is True and "return_tensors" not in kw
+            return "|".join(f"{m['role']}:{m['content']}" for m in messages) + "|assistant:"
+
+    assert chat_prompt(Tok(), "S", "U") == "system:S|user:U|assistant:"
