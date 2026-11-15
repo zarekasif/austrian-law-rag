@@ -48,6 +48,8 @@ def test_build_context_numbers_chunks_and_respects_budget():
     assert sections == ["MRG § 16b", "AZG § 11", "AZG § 12"]
     _, short = build_context(CHUNKS, [2, 0, 1], max_chars=150)
     assert short == ["MRG § 16b"]  # the first chunk is always kept, later ones must fit
+    _, repeated = build_context(CHUNKS, [0, 0], max_chars=10_000)
+    assert repeated == ["AZG § 11", "AZG § 11"]  # one entry per numbered passage
 
 
 def test_user_prompt_contains_question_and_context():
@@ -148,3 +150,20 @@ def test_chat_prompt_asks_the_template_for_text():
             return "|".join(f"{m['role']}:{m['content']}" for m in messages) + "|assistant:"
 
     assert chat_prompt(Tok(), "S", "U") == "system:S|user:U|assistant:"
+
+
+def test_context_numbers_count_as_citations():
+    numbered = ["UrlG § 2", "UrlG § 5", "AZG § 11"]
+    assert parse_citations("30 Werktage [1].", numbered) == ["UrlG § 2"]
+    assert parse_citations("Siehe [1][3].", numbered) == ["UrlG § 2", "AZG § 11"]
+    # passage number plus an invented law name: both are recorded, so precision drops
+    assert parse_citations("nicht angerechnet [1 AZG § 5 (1)].", numbered) == ["UrlG § 2", "AZG § 5"]
+    assert parse_citations("[9]", numbered) == []  # no such passage
+    assert parse_citations("30 Werktage [1].") == []  # without the mapping, numbers are ignored
+
+
+def test_pipeline_resolves_passage_numbers():
+    gen = ScriptedGenerator(["Ja, eine halbe Stunde [1]."])
+    a = AnswerPipeline(FakeRetriever([0, 1]), CHUNKS, gen)("Pause?")
+    assert a.citations == ["AZG § 11"] and a.extra["numbered"] == ["AZG § 11", "AZG § 12"]
+    assert "Schreibe nicht nur [1]" in gen.prompts[0][0]

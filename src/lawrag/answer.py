@@ -25,7 +25,8 @@ angegebenen Gesetzesstellen.
 
 Regeln:
 - Antworte auf Deutsch, in einfachen Worten, in höchstens vier Sätzen.
-- Belege jede Aussage mit der Fundstelle in eckigen Klammern, genau in der Form [AZG § 11].
+- Belege jede Aussage mit der Fundstelle in eckigen Klammern, genau in der Form [AZG § 11], mit der
+  Abkürzung des Gesetzes aus der Überschrift der Gesetzesstelle. Schreibe nicht nur [1] oder [2].
 - Nenne nur Paragraphen, die in den angegebenen Gesetzesstellen vorkommen.
 - Wenn die Gesetzesstellen die Frage nicht beantworten, antworte genau: "{NO_ANSWER}"
 - Gib keine Rechtsberatung über den Wortlaut hinaus und erfinde nichts dazu."""
@@ -39,9 +40,21 @@ _CITE_SECTION_FIRST = re.compile(
 )
 
 
-def parse_citations(text: str) -> list[str]:
-    """§ ids cited in an answer, in order of first appearance, e.g. ``["AZG § 11"]``."""
+_CONTEXT_REF = re.compile(r"\[(\d{1,2})(?=[\]\s])")
+
+
+def parse_citations(text: str, numbered: list[str] | None = None) -> list[str]:
+    """§ ids cited in an answer, in order of first appearance, e.g. ``["AZG § 11"]``.
+
+    ``numbered`` maps context numbers to § ids (``numbered[0]`` is the section of chunk [1]), so a
+    reference to a context passage such as ``[2]`` counts as citing that passage's §.
+    """
     found: list[tuple[int, str]] = []
+    if numbered:
+        for m in _CONTEXT_REF.finditer(text):
+            n = int(m.group(1))
+            if 1 <= n <= len(numbered):
+                found.append((m.start(), numbered[n - 1]))
     for m in _CITE_LAW_FIRST.finditer(text):
         found.append((m.start(), f"{m.group(1)} § {m.group(2)}"))
     for m in _CITE_SECTION_FIRST.finditer(text):
@@ -58,18 +71,17 @@ def is_abstention(text: str) -> bool:
     return "keine antwort" in text.casefold()
 
 
-def build_context(chunks: list[dict], chunk_ids: list[int], max_chars: int = 6000) -> tuple[str, list[str]]:
-    """Numbered context from retrieved chunks; returns the text and the § ids it contains."""
-    parts, sections, used = [], [], 0
-    for n, i in enumerate(chunk_ids, start=1):
+def build_context(chunks: list[dict], chunk_ids: list[int], max_chars: int = 9000) -> tuple[str, list[str]]:
+    """Numbered context from retrieved chunks; returns the text and the § id of each numbered passage."""
+    parts, numbered, used = [], [], 0
+    for i in chunk_ids:
         text = chunks[i]["text"]
         if parts and used + len(text) > max_chars:
             break
-        parts.append(f"[{n}] {text}")
+        parts.append(f"[{len(parts) + 1}] {text}")
+        numbered.append(chunks[i]["section_id"])
         used += len(text)
-        if chunks[i]["section_id"] not in sections:
-            sections.append(chunks[i]["section_id"])
-    return "\n\n".join(parts), sections
+    return "\n\n".join(parts), numbered
 
 
 def user_prompt(question: str, context: str) -> str:
@@ -87,7 +99,7 @@ class Answer:
 
 
 class AnswerPipeline:
-    def __init__(self, retriever, chunks: list[dict], generator, top_chunks: int = 6, max_context_chars: int = 6000):
+    def __init__(self, retriever, chunks: list[dict], generator, top_chunks: int = 6, max_context_chars: int = 9000):
         self.retriever = retriever
         self.chunks = chunks
         self.generator = generator
@@ -96,9 +108,11 @@ class AnswerPipeline:
 
     def __call__(self, question: str) -> Answer:
         chunk_ids = self.retriever.rank_chunks(question, self.top_chunks)
-        context, sections = build_context(self.chunks, chunk_ids, self.max_context_chars)
+        context, numbered = build_context(self.chunks, chunk_ids, self.max_context_chars)
         text = self.generator(SYSTEM_PROMPT, user_prompt(question, context)).strip()
-        return Answer(question, text, parse_citations(text), sections, is_abstention(text))
+        sections = list(dict.fromkeys(numbered))
+        return Answer(question, text, parse_citations(text, numbered), sections, is_abstention(text),
+                      extra={"numbered": numbered})
 
 
 def chat_prompt(tokenizer, system: str, user: str) -> str:
