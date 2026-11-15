@@ -1,0 +1,23 @@
+id,question,gold,bm25,bm25-stem,bm25-ngram,e5,bge-m3,bm25 + e5,0.25·bm25-ngram + e5,0.5·bm25-ngram + e5,bm25-ngram + e5,bm25 + bge-m3,0.25·bm25-ngram + bge-m3,0.5·bm25-ngram + bge-m3,bm25-ngram + bge-m3,e5 → rerank,bge-m3 → rerank
+q001,Wie viele Urlaubstage habe ich pro Jahr?,UrlG § 2,35,30,5,1,1,1,1,2,2,1,1,2,3,1,1
+q002,"Darf mein Chef einfach bestimmen, wann ich Urlaub nehme?",UrlG § 4,1,1,3,1,1,1,1,1,1,1,1,1,1,1,1
+q003,Ich war im Urlaub vier Tage krank. Verliere ich diese Urlaubstage?,UrlG § 5,13,1,1,1,1,4,1,1,1,3,1,1,1,1,1
+q004,"Ich kündige meinen Job. Bekomme ich Geld für Urlaubstage, die ich nicht genommen habe?",UrlG § 10,,30,3,4,1,11,3,2,3,7,1,1,2,1,1
+q005,Wie viele Stunden darf ich normalerweise pro Tag arbeiten?,AZG § 3,11,14,6,11,9,8,9,8,8,9,8,7,7,1,1
+q006,Wie lange darf ein Arbeitstag mit Überstunden maximal dauern?,AZG § 9,31,68,17,3,2,7,4,4,6,6,2,5,6,4,4
+q007,"Bekomme ich mehr Geld, wenn ich länger arbeite als normal?",AZG § 10,2,8,13,12,16,1,12,12,12,1,13,13,12,2,1
+q008,"Muss mein Chef mir eine Pause geben, wenn ich 7 Stunden arbeite?",AZG § 11,69,1,1,1,1,23,1,1,1,20,1,1,1,1,1
+q009,Ich habe bis 23 Uhr gearbeitet. Darf ich am nächsten Tag schon um 7 Uhr wieder anfangen?,AZG § 12,34,58,,7,21,9,17,26,29,13,29,34,47,8,11
+q010,Gilt das Mietrecht auch für mein Zimmer im Studentenheim?,MRG § 1,,,2,1,1,17,1,1,1,18,1,1,1,1,1
+q011,Was ist der Unterschied zwischen Hauptmiete und Untermiete?,MRG § 2,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+q012,Das Dach ist undicht und es regnet in die Wohnung. Wer muss das reparieren?,MRG § 3,,28,37,2,5,27,3,5,11,27,4,6,14,4,6
+q013,"Bekomme ich meine Kaution zurück, wenn ich ausziehe?",MRG § 16b,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+q014,Wie kurz darf ein befristeter Mietvertrag mindestens sein?,MRG § 29,16,1,2,1,1,4,1,1,1,3,1,1,2,1,1
+q015,Wie kann ich als Mieter meine Wohnung kündigen?,MRG § 33,25,4,11,4,1,10,4,5,6,7,2,4,5,2,2
+q016,"Wie oft darf ich eine Prüfung wiederholen, wenn ich durchgefallen bin?",UG § 77,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
+q017,Kann ich mir Kurse von meiner alten Uni anrechnen lassen?,UG § 78,,,6,7,4,14,5,4,3,7,2,2,2,2,3
+q018,"Kann ich ein Semester Pause vom Studium machen, weil ich krank bin?",UG § 67,47,57,26,1,1,13,2,3,7,17,2,6,11,1,1
+q019,Wann muss ich Studiengebühren zahlen?,UG § 91,,,41,1,1,4,2,4,11,4,2,4,9,1,2
+q020,"Was brauche ich, um mein Studentenvisum zu verlängern?",NAG § 64,,,1,2,1,6,1,1,1,4,1,1,1,1,1
+q021,Wie viele Stunden pro Woche darf ich als ausländischer Student arbeiten?,AuslBG § 4,31,18,1,3,23,11,2,1,1,23,10,9,7,1,23
+q022,"Wer muss die Arbeitsbewilligung beantragen, ich oder mein Arbeitgeber?",AuslBG § 19,1,1,1,3,1,1,2,1,1,1,1,1,1,1,1

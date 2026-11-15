@@ -10,7 +10,7 @@ from the official legal information system (RIS) in their current version.
 The point of the project is the measurement: every retrieval method is scored on a hand-written
 set of German questions with gold § labels, so each design choice is backed by numbers.
 
-**Status:** milestone 1 done; first retrieval results below. Milestone 2 (stronger baselines, reranking, larger question set) in progress.
+**Status:** retrieval comparison done (milestone 2, results below): E5 + cross-encoder reranking finds the right § in the top 10 for all 22 questions. Next: answer generation with citations.
 
 ## Corpus
 
@@ -61,29 +61,44 @@ Colab notebooks:
 [01: corpus, questions, BM25](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/01_corpus_and_bm25.ipynb) ·
 [02: compare all retrievers](https://colab.research.google.com/github/zarekasif/austrian-law-rag/blob/main/notebooks/02_compare_retrievers.ipynb).
 
-## First results
+## Results
 
-22 questions (21 phrased the way a non-lawyer asks), 545 §§, 1,435 chunks. Retrieval at § level.
+22 questions (21 phrased the way a non-lawyer asks), 545 §§, 1,435 chunks, retrieval at § level.
+Selected rows; all 15 configurations and per-question ranks are in [`results/m2/`](results/m2/).
 
-| Retriever | Recall@1 | Recall@3 | Recall@5 | Recall@10 | MRR@10 | nDCG@10 |
-| --- | --- | --- | --- | --- | --- | --- |
-| BM25 (own implementation, no stemming) | 22.7 | 27.3 | 27.3 | 27.3 | 25.0 | 25.6 |
-| Dense: multilingual-e5-base | **50.0** | **72.7** | **81.8** | **90.9** | **62.7** | **69.5** |
-| Hybrid: BM25 + E5, reciprocal rank fusion | 31.8 | 31.8 | 45.5 | 68.2 | 38.2 | 44.9 |
+| Retriever | Recall@1 | Recall@3 | Recall@10 | MRR@10 |
+| --- | --- | --- | --- | --- |
+| BM25, words | 22.7 | 27.3 | 27.3 | 25.0 |
+| BM25, German stems | 36.4 | 36.4 | 45.5 | 38.1 |
+| BM25, 4-grams of stems | 36.4 | 54.5 | 68.2 | 46.4 |
+| Dense: multilingual-e5-base | 50.0 | 72.7 | 90.9 | 62.7 |
+| Dense: BGE-M3 | 68.2 | 72.7 | 86.4 | 73.0 |
+| Hybrid: BM25 words + E5, equal weights | 31.8 | 31.8 | 68.2 | 38.2 |
+| Hybrid: 0.25 × BM25 4-grams + BGE-M3 | 54.5 | 77.3 | 90.9 | 68.1 |
+| BGE-M3 → cross-encoder rerank | 68.2 | 81.8 | 90.9 | 76.1 |
+| **E5 → cross-encoder rerank** | **72.7** | **86.4** | **100.0** | **82.4** |
 
-What this shows so far:
+Findings:
 
-- **Lexical search fails on everyday wording.** BM25 finds only 6 of 22 §§ in its top 10. People ask
-  "Muss mein Chef mir eine Pause geben?"; the law says *Ruhepause*. Without stemming or compound
-  splitting, *Pause* never matches *Ruhepause*.
-- **The dense model closes most of that gap**: the right § is in the top 10 for 20 of 22 questions.
-- **Naive fusion hurts.** Equal-weight reciprocal rank fusion lets BM25's confident wrong hits push
-  correct E5 results down. A hybrid only helps if the weak retriever is weighted down or improved.
+1. **Vocabulary mismatch breaks plain BM25**, and German morphology explains much of it. Stemming
+   lifts Recall@10 from 27 to 45; character 4-grams of stems, which match parts of compounds, to 68.
+   "Muss mein Chef mir eine Pause geben?" moves from rank 69 to rank 1 once *Pause* can match *Ruhepause*.
+2. **Dense retrieval is far stronger** on everyday questions. BGE-M3 puts the right § first twice as
+   often as E5 (68 vs. 50 Recall@1); E5 finds slightly more within the top 10.
+3. **Hybrid search does not pay off here.** An equal-weight mix with plain BM25 is much worse than
+   dense alone; down-weighting a better lexical ranking only brings it back to roughly dense-only level.
+4. **Reranking is the largest gain.** A cross-encoder over E5's top 30 chunks finds the right § in
+   the top 10 for every question and ranks it first for 73%. Its ceiling is the first stage: for
+   one question BGE-M3 ranked the § too low for it to be among the 30 reranked chunks.
+5. **Remaining hard cases need reasoning, not matching**: "Ich habe bis 23 Uhr gearbeitet. Darf ich
+   um 7 Uhr wieder anfangen?" (rest period, AZG § 12) is at best rank 7; the question never says
+   *Ruhezeit* or *elf Stunden*.
 
-Caveat: with 22 questions, one question is 4.5 points. The set is being extended to ~60 before
-drawing firm conclusions. The questions were drafted with AI assistance and each gold § was checked
-against the RIS text; layperson phrasing deliberately tests vocabulary mismatch, which favours dense
-retrieval.
+Caveats: with 22 questions one question is 4.5 points, so differences of a few points are noise.
+The hybrid weights come from a three-value grid evaluated on the same questions; the reranker and
+4-gram analyzer were chosen in advance. Questions were drafted with AI assistance and each gold §
+was checked against the RIS text. The set will grow to ~60, with a held-out part, before the
+choice of pipeline is final. The first run (BM25, E5, equal hybrid) reproduced exactly.
 
 ## Evaluation set
 
@@ -94,8 +109,8 @@ avoided, is described in [`docs/writing-questions.md`](docs/writing-questions.md
 ## Roadmap
 
 1. ~~Corpus, BM25 baseline, evaluation harness~~ (done)
-2. Stronger baselines and reranking (code done: stemmed and 4-gram BM25, BGE-M3, weighted hybrid,
-   cross-encoder reranking); results pending. Extend the question set to ~60 with a held-out part.
+2. ~~Stronger baselines and reranking~~ (done, results above). Still to do: extend the question
+   set to ~60 with a held-out part.
 3. Answer generation with an LLM that must cite §§; check that every citation supports the answer.
 4. FastAPI service, Docker image and a public demo.
 
